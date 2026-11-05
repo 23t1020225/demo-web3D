@@ -11,6 +11,12 @@
 
 Thêm `?room=bathroom` để vào Phần 3. Các phòng khác: `living-left`, `living-right`, `kitchen-right`, `bedroom-left`.
 
+## Ảnh xem trước khi chia sẻ
+
+Trang có sẵn thông tin Open Graph và Twitter Card trong `index.html`, để ứng dụng chia sẻ đọc được mà không cần chạy mô hình 3D. Ảnh mặt tiền nằm ở `public/share/nep-house-v1.jpg` và được sao chép vào bản phát hành.
+
+Link chia sẻ chính: `https://demoweb3d-two.vercel.app/`. Nếu đổi tên miền, cập nhật các địa chỉ tuyệt đối trong `index.html`. Khi thay ảnh, dùng tên tệp mới và cập nhật địa chỉ ảnh cùng kích thước để tránh bộ nhớ đệm ảnh cũ trên các ứng dụng.
+
 ## Tối ưu hiệu năng
 
 - Tải phòng đang xem trước, chuẩn bị các phòng còn lại khi người xem ngừng thao tác. Giữ phòng đã tải trong bộ nhớ.
