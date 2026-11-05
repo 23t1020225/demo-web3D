@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
 import { DataUtils, Vector2, Vector3 } from 'three'
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js'
-import { balancedQuality, initialRoomIds, visibleRoomIds } from '../src/quality-profile.js'
+import { desktopQuality, initialRoomIds, visibleRoomIds } from '../src/quality-profile.js'
 import { decodePackedGeometry } from '../src/geometry-loader.js'
 import { carvedChair, carvedBench } from '../src/carved-seats.js'
 import { standardMaterial, roundedGeometry } from '../src/model-resources.js'
@@ -23,29 +23,26 @@ test('reflection refreshes on entry, after scene changes and immediately on stop
   }
 })
 
-test('balanced quality lowers movement cost on both device classes', () => {
-  const phone = balancedQuality({ memory: 8, cores: 8, touch: true, pixelRatio: 3 })
-  assert.equal(phone.idleDpr, 2)
-  assert.equal(phone.motionDpr, 1)
-  assert.equal(phone.reflectionSize, 256)
-  for (const memory of [2, 4, 8, 16]) {
-    const q = balancedQuality({ memory, cores: 8 })
-    assert(q.motionDpr < q.idleDpr)
-    assert(q.motionDpr >= q.minDpr)
-    assert(q.shadowSize <= 1536 && q.reflectionSize <= 384)
+test('phones use the same full rendering quality as computers', () => {
+  for (const pixelRatio of [1, 1.25, 2, 3, 4]) {
+    const computer = desktopQuality({ memory: 16, cores: 16, touch: false, pixelRatio })
+    for (const memory of [2, 4, 8]) {
+      const phone = desktopQuality({ memory, cores: 4, touch: true, pixelRatio })
+      assert.deepEqual(phone, computer)
+      assert(phone.antialias)
+      assert.equal(phone.shadowSize, 1536)
+      assert.equal(phone.reflectionSize, 384)
+    }
   }
 })
 
-test('retina clarity respects native density and keeps a lower budget on weak phones', () => {
-  for (const pixelRatio of [1, 1.25, 2, 3, 4]) {
-    const q = balancedQuality({ memory: 8, cores: 6, touch: true, pixelRatio })
-    assert(q.idleDpr <= pixelRatio && q.idleDpr <= 2)
-    assert(q.motionDpr <= q.idleDpr)
-    assert(q.antialias)
+test('Retina screens render at full 3x density with a stable valid resolution', () => {
+  assert.equal(desktopQuality({ pixelRatio: 3 }).dpr, 3)
+  assert.equal(desktopQuality({ pixelRatio: 2 }).dpr, 2)
+  assert.equal(desktopQuality({ pixelRatio: 4 }).dpr, 3)
+  for (const pixelRatio of [1, 0, -1, NaN, Infinity, undefined]) {
+    assert.equal(desktopQuality({ pixelRatio }).dpr, 1.25)
   }
-  const weak = balancedQuality({ memory: 4, cores: 4, touch: true, pixelRatio: 3 })
-  assert.equal(weak.idleDpr, 1.5)
-  assert(weak.motionDpr < weak.idleDpr)
 })
 
 test('visibility keeps reference views and open neighbouring rooms', () => {

@@ -126,8 +126,7 @@ function entryPoints(start) {
 }
 
 function CameraRig({ angle, controls, door, yard, exterior, roof, readyZones, onReady, onUnavailable, onSettled, reviewOpen }) {
-  const { camera, gl, size, invalidate, setDpr } = useThree()
-  const quality = useMemo(deviceQuality, [])
+  const { camera, gl, size, invalidate } = useThree()
   const room = roomPoses.get(angle)
   const neededRooms = useMemo(() => initialRoomIds(room?.id), [room])
   const inRoom = Boolean(room)
@@ -139,7 +138,7 @@ function CameraRig({ angle, controls, door, yard, exterior, roof, readyZones, on
   const flight = useRef(null)
   const lookAt = useRef(new Vector3())
   const shadowOpening = useRef(0)
-  const motion = useRef({ frames: 0, slow: 0, scaled: false, restore: null })
+  const motion = useRef(false)
   const ready = useRef(false)
   const callbacks = useRef(null)
   callbacks.current = { onReady, onUnavailable, onSettled }
@@ -177,7 +176,6 @@ function CameraRig({ angle, controls, door, yard, exterior, roof, readyZones, on
   }, [angle, room, camera, invalidate])
 
   useLayoutEffect(() => { invalidate() }, [reviewOpen, invalidate])
-  useEffect(() => () => clearTimeout(motion.current.restore), [])
 
   useEffect(() => {
     const canvas = gl.domElement
@@ -284,8 +282,7 @@ function CameraRig({ angle, controls, door, yard, exterior, roof, readyZones, on
   useFrame((_, elapsed) => {
     const state = inRoom ? roomLook.current : current.current
     const destination = inRoom ? roomGoal.current : goal.current
-    const pacing = motion.current
-    const step = Math.min(elapsed, pacing.frames ? .075 : .022)
+    const step = Math.min(elapsed, motion.current ? .075 : .022)
     let moving = false
     for (const key of Object.keys(destination)) {
       if (Math.abs(state[key] - destination[key]) < .001) state[key] = destination[key]
@@ -306,18 +303,7 @@ function CameraRig({ angle, controls, door, yard, exterior, roof, readyZones, on
     camera.userData.sceneReady = sceneReady
     camera.userData.fastMotion = Boolean(trip) || moving
     camera.userData.cameraMoving = Boolean(trip) || moving
-    if (trip || moving) {
-      clearTimeout(pacing.restore)
-      pacing.frames++
-      if (!pacing.scaled) {
-        pacing.scaled = true
-        setDpr(quality.motionDpr)
-      }
-    } else if (pacing.frames) {
-      pacing.restore = setTimeout(() => { setDpr(quality.idleDpr); invalidate() }, quality.restoreDelay)
-      pacing.frames = pacing.slow = 0
-      pacing.scaled = false
-    }
+    motion.current = Boolean(trip) || moving
     if (trip) {
       if (!sceneReady) {
         trip.started = performance.now()
@@ -472,7 +458,7 @@ function Model({ shadowSize, markers, showMarkers, moving, onInspect, ...props }
 
 export function ExteriorScene(props) {
   const quality = useMemo(deviceQuality, [])
-  return <Canvas frameloop="demand" dpr={quality.idleDpr} shadows={shadows}
+  return <Canvas frameloop="demand" dpr={quality.dpr} shadows={shadows}
     camera={{ near: .06, far: 160, fov: 44 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, toneMappingExposure: lightingProfile.exposure }}>
     <Suspense fallback={null}><Model {...props} shadowSize={quality.shadowSize} /></Suspense>
   </Canvas>
