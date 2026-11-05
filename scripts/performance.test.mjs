@@ -24,15 +24,28 @@ test('reflection refreshes on entry, after scene changes and immediately on stop
 })
 
 test('balanced quality lowers movement cost on both device classes', () => {
-  const phone = balancedQuality({ memory: 8, cores: 8, touch: true })
-  assert.equal(phone.idleDpr, 1)
-  assert(phone.motionDpr <= .70 && phone.reflectionSize === 256)
+  const phone = balancedQuality({ memory: 8, cores: 8, touch: true, pixelRatio: 3 })
+  assert.equal(phone.idleDpr, 2)
+  assert.equal(phone.motionDpr, 1)
+  assert.equal(phone.reflectionSize, 256)
   for (const memory of [2, 4, 8, 16]) {
     const q = balancedQuality({ memory, cores: 8 })
     assert(q.motionDpr < q.idleDpr)
     assert(q.motionDpr >= q.minDpr)
     assert(q.shadowSize <= 1536 && q.reflectionSize <= 384)
   }
+})
+
+test('retina clarity respects native density and keeps a lower budget on weak phones', () => {
+  for (const pixelRatio of [1, 1.25, 2, 3, 4]) {
+    const q = balancedQuality({ memory: 8, cores: 6, touch: true, pixelRatio })
+    assert(q.idleDpr <= pixelRatio && q.idleDpr <= 2)
+    assert(q.motionDpr <= q.idleDpr)
+    assert(q.antialias)
+  }
+  const weak = balancedQuality({ memory: 4, cores: 4, touch: true, pixelRatio: 3 })
+  assert.equal(weak.idleDpr, 1.5)
+  assert(weak.motionDpr < weak.idleDpr)
 })
 
 test('visibility keeps reference views and open neighbouring rooms', () => {

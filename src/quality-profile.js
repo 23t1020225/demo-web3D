@@ -1,8 +1,11 @@
-export function balancedQuality({ memory = 8, cores = 8, touch = false } = {}) {
+export function balancedQuality({ memory = 8, cores = 8, touch = false, pixelRatio = 1 } = {}) {
   const limited = memory <= 4 || cores <= 4
   const compact = limited || touch
+  const nativeRatio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1
+  // Retina phones need more than one drawing-buffer pixel per CSS pixel at rest.
+  const idleDpr = touch ? Math.max(1, Math.min(nativeRatio, limited ? 1.5 : 2)) : limited ? 1 : 1.25
   return Object.freeze({
-    name: 'balanced', antialias: !limited, idleDpr: compact ? 1 : 1.25, motionDpr: limited ? .65 : touch ? .70 : .85,
+    name: 'balanced', antialias: !limited, idleDpr, motionDpr: limited ? .75 : touch ? 1 : .85,
     minDpr: .65, shadowSize: limited ? 768 : touch ? 1024 : 1536,
     reflectionSize: compact ? 256 : 384, restoreDelay: 450,
   })
@@ -10,7 +13,7 @@ export function balancedQuality({ memory = 8, cores = 8, touch = false } = {}) {
 
 export function deviceQuality() {
   return balancedQuality({ memory: navigator.deviceMemory || 8, cores: navigator.hardwareConcurrency || 8,
-    touch: window.matchMedia('(pointer: coarse)').matches })
+    touch: window.matchMedia('(pointer: coarse)').matches, pixelRatio: window.devicePixelRatio })
 }
 
 // Keep neighbouring rooms visible through openings, but skip rooms behind solid walls.

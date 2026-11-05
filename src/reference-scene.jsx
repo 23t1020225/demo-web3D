@@ -472,7 +472,7 @@ function Model({ shadowSize, markers, showMarkers, moving, onInspect, ...props }
 
 export function ExteriorScene(props) {
   const quality = useMemo(deviceQuality, [])
-  return <Canvas frameloop="demand" dpr={[quality.minDpr, quality.idleDpr]} shadows={shadows}
+  return <Canvas frameloop="demand" dpr={quality.idleDpr} shadows={shadows}
     camera={{ near: .06, far: 160, fov: 44 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping, toneMappingExposure: lightingProfile.exposure }}>
     <Suspense fallback={null}><Model {...props} shadowSize={quality.shadowSize} /></Suspense>
   </Canvas>
